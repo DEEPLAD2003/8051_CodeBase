@@ -2,6 +2,9 @@
 #include "reg51.h"
 #endif
 
+#define ENABLE_IT									1
+#define DISABLE_IT								0
+
 #define INTERRUPT_IE_EA						0x80
 #define INTERRUPT_IE_EXT0					0x01
 #define INTERRUPT_IE_ET0					0x02
@@ -16,6 +19,6 @@
 #define INTERRUPT_IP_PS						0x10
 #define INTERRUPT_IP_PT2					0x20
 
-void Interrupt_Config(unsigned int interrupt_type);
-void Interrupt_EnableOrDisable(unsigned int status);
+void Interrupt_Config(unsigned int,unsigned int);
+void Interrupt_EnableOrDisable(unsigned int);
 

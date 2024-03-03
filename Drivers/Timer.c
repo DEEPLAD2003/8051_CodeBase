@@ -3,17 +3,25 @@
 #define TIMER_H
 #endif
 
+
 /*
  *		API for configuring the Timer peripheral.
  */
 void Timer_Config(Timer_Handle_t timer_handle){
 	if (timer_handle.timer==TIMER0){
+		if (timer_handle.type==COUNTER){
+			TMOD|=TIMER_TMOD_CT;
+		}
 		TMOD|=timer_handle.mode;
 	}
 	else if(timer_handle.timer==TIMER1){
+		if (timer_handle.type==COUNTER){
+			TMOD|=(TIMER_TMOD_CT<<4);
+		}
 		TMOD|=(timer_handle.mode<<4);
 	}
 }
+
 
 /*
  *	API to generate Delay (in milisec)
@@ -36,6 +44,7 @@ void Timer_Delay(Timer_Handle_t timer_handle,unsigned int delay_time){			// Dela
 		Timer_GenerateDelay1(timer_handle,count);
 	}
 }
+
 
 /*
  *		API for generating the delay for TIMER0.
@@ -82,6 +91,7 @@ void Timer_GenerateDelay0(Timer_Handle_t timer_handle,unsigned int count){
 		}
 }
 
+
 /*
  *		API for generating the delay for TIMER1.
  */
@@ -91,43 +101,44 @@ void Timer_GenerateDelay1(Timer_Handle_t timer_handle,unsigned int count){
 	unsigned int i;
 	
 	/*
-		 ******	Mode 1	******
-		*/
-		if (timer_handle.mode==TIMER_MODE1){
-			count=(0xFFFF-count)+1;
-			TH1=((count>>8)&0xFF);
-			TL1=(count&0xFF);
+	 ******	Mode 1	******
+	*/
+	if (timer_handle.mode==TIMER_MODE1){
+		count=(0xFFFF-count)+1;
+		TH1=((count>>8)&0xFF);
+		TL1=(count&0xFF);
+		TR1=1;
+		while(TF1==0);
+		TR1=0;	TF1=0;
+	}
+	/*
+	 ******	Mode 2	******
+	*/
+	if (timer_handle.mode==TIMER_MODE2){
+		//			Checking Overflow condition.
+		if (count<0xFF){
+			count=(0xFF-count)+1;
+			TH1=count;		TL1=count;
 			TR1=1;
 			while(TF1==0);
 			TR1=0;	TF1=0;
 		}
-		/*
-		 ******	Mode 2	******
-		*/
-		if (timer_handle.mode==TIMER_MODE2){
-			//			Checking Overflow condition.
-			if (count<0xFF){
-				count=(0xFF-count)+1;
-				TH1=count;		TL1=count;
+		else{
+			count_div=(count/0xFF);		count_mod=(count%0xFF);
+			for (i=0;i<count_div;i++){
+				TH1=0x00;		TL1=0x00;
 				TR1=1;
 				while(TF1==0);
-				TR1=0;	TF1=0;
+				TF1=0;
 			}
-			else{
-				count_div=(count/0xFF);		count_mod=(count%0xFF);
-				for (i=0;i<count_div;i++){
-					TH1=0x00;		TL1=0x00;
-					TR1=1;
-					while(TF1==0);
-					TF1=0;
-				}
-				count_mod=(0xFF-count_mod)+1;
-				TH1=count_mod;		TL1=count_mod;
-				while(TF1==0);
-				TR1=0;		TF1=0;
-			}
+			count_mod=(0xFF-count_mod)+1;
+			TH1=count_mod;		TL1=count_mod;
+			while(TF1==0);
+			TR1=0;		TF1=0;
 		}
+	}
 }
+
 
 /*
  *		API for generating square wave.
@@ -141,7 +152,7 @@ void Timer_GenerateWave(unsigned int frequency,unsigned int duty_cycle){
 	count_on=((0xFFFF-count_on)+1);
 	count_off=((0xFFFF-count_off)+1);
 
-	P1=~P1;
+	PIN=~PIN;
 	TH0=((count_on>>8)&0xFF);
 	TL0=(count_on&0xFF);
 	TR0=1;
@@ -152,7 +163,7 @@ void Timer_GenerateWave(unsigned int frequency,unsigned int duty_cycle){
  */
 void Timer_ContinueWave(){
 	TR0=0;	TF0=0;
-  P1=~P1;
+  PIN=~PIN;
 	if (P1==0xFF){
 		TH0=((count_on>>8)&0xFF);
 		TL0=(count_on&0xFF);
@@ -164,3 +175,27 @@ void Timer_ContinueWave(){
 	TR0=1;
 }
 
+/*
+ * 	API for Event Count_using Timer
+ */
+void Timer_EventCounter(Timer_Handle_t timer){
+	if (timer.timer==TIMER0){
+		TH0=0x00;		TH0=0x00;
+		TR0=1;
+	}
+	else if (timer.timer==TIMER1){
+		TH1=0x00;		TH1=0x00;
+		TR1=1;
+	}
+}
+/*
+ * 	API for Handling the interrupt_for counter
+ */
+void Timer_EventCapture(Timer_Handle_t timer){
+	if (timer.timer==TIMER0){
+		P2=TL0+(TH0<<4);
+	}
+	else if (timer.timer==TIMER1){
+		P2=TL1+(TH1<<4);
+	}
+}

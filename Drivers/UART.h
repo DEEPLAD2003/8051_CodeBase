@@ -29,8 +29,18 @@
 #define UART_BAUD_2400 			0xF4
 #define UART_BAUD_1200 			0xE8
 
+static char* pTxBuffer;
+static char* pRxBuffer;
+
+
 void UART_Config(unsigned int,unsigned int);
+void UART_EnableOrDisable(unsigned int);
 void UART_SendData(char);
+void UART_SendString(char*);
 char UART_ReceiveData(void);
-void UART_SendString(char*, unsigned int);
 void UART_SendMemoryData(unsigned int, unsigned int);
+
+void UART_InterruptHandler(void);
+void UART_SendDataInt(char*);
+void UART_SendStringInt(char*);
+char* UART_ReceiveDataInt(void);
